@@ -18,6 +18,7 @@ imsize = 224
 epochs = 400
 data_path = 'data'
 model_path = ''
+is_train = True
 
 class Classifier(nn.Module):
     """VGG tensor to binary classification"""
@@ -58,7 +59,7 @@ def load_from_csv(fname):
     """Load data from csv"""
     input_list = []
     output_list = []
-    with open(os.path.join(data_path, "train.csv"), 'r') as f:
+    with open(os.path.join(data_path, f"{fname}"), 'r') as f:
         data = f.read().split('\n')
         for entry in data:
             vals = entry.split(',')
@@ -76,41 +77,41 @@ if(model_path):
     classifier.load_state_dict(torch.load(model_path))
     classifier.eval()
 
-loss_f = nn.MSELoss()
-optimizer = optim.SGD(classifier.parameters(), lr=0.001, momentum=0.9)
+if is_train:
+    # === TRAIN ===
+    print("Started training...")
 
-# load images
-train_list, target_list = load_from_csv('train.csv')
+    train_list, target_list = load_from_csv('train.csv')
+    loss_f = nn.MSELoss()
+    optimizer = optim.SGD(classifier.parameters(), lr=0.001, momentum=0.9)
 
-# === TRAIN ===
-print("Started training...")
-total_loss = 0
-losses = []
+    total_loss = 0
+    losses = []
 
-for i in range(epochs):
-    # choose random image
-    idx = random.randint(0, len(train_list)-1)
-    inputs = image_loader(train_list[idx])
-    target = target_list[idx]
+    for i in range(epochs):
+        # choose random image
+        idx = random.randint(0, len(train_list)-1)
+        inputs = image_loader(train_list[idx])
+        target = target_list[idx]
 
-    # run iteration
-    optimizer.zero_grad()
+        # run iteration
+        optimizer.zero_grad()
 
-    outputs = classifier(cnn(inputs).view(1, -1))
+        outputs = classifier(cnn(inputs).view(1, -1))
 
-    loss = loss_f(outputs, target)
-    total_loss += loss.item()
-    losses.append(loss.item())
-    
-    loss.backward()
+        loss = loss_f(outputs, target)
+        total_loss += loss.item()
+        losses.append(loss.item())
+        
+        loss.backward()
 
-    optimizer.step()
+        optimizer.step()
 
-    # save model
-    if i % 100 == 99:
-        torch.save(classifier.state_dict(), os.path.join(data_path, f"models/classifier-{i}-{loss}"))
+        # save model
+        if i % 100 == 99:
+            torch.save(classifier.state_dict(), f"models/classifier-{i}")
 
-    print(f"Epoch: {i}\tLoss: {loss}\tAvg. Loss: {total_loss / (i+1)}")
+        print(f"Epoch: {i}\tLoss: {round(loss.item(), 2)}\tAvg. Loss: {round(total_loss / (i+1), 2)}")
 
 # === TEST ===
 with torch.no_grad():
@@ -121,13 +122,15 @@ with torch.no_grad():
 
     for idx in range(len(test_inputs)):
         # choose random image
-        inputs = image_loader(img_list[idx])
-        target = output_list[idx]
+        inputs = image_loader(test_inputs[idx])
+        target = test_outputs[idx]
 
         outputs = classifier(cnn(inputs).view(1, -1))
 
         res = round(outputs.item())
         if res == target.item():
             correct += 1
+
+        print(f"Progress {round(float(idx) / len(test_inputs), 2)}\tPredict: {round(outputs.item(), 2)}\tActual: {round(target.item(), 2)}")
 
     print("Correct: {correct}\tPercent: {float(correct) / len(test_inputs)}")

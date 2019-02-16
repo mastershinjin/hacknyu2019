@@ -117,3 +117,5 @@ dmypy.json
 
 # Personal
 /data
+/downloads
+/models
