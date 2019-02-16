@@ -35,7 +35,7 @@ class Classifier(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(64, 1),
-            nn.Softmax()
+            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -48,11 +48,24 @@ loader = transforms.Compose([
 ])
 
 def image_loader(image_name):
-    """convert PIL image to model-compatible tensor"""
+    """Convert PIL image to model-compatible tensor"""
     image = Image.open(image_name)
     image = image.convert("RGB")
     image = loader(image).unsqueeze(0)
     return image.to(device, torch.float)
+
+def load_from_csv(fname):
+    """Load data from csv"""
+    input_list = []
+    output_list = []
+    with open(os.path.join(data_path, "train.csv"), 'r') as f:
+        data = f.read().split('\n')
+        for entry in data:
+            vals = entry.split(',')
+            input_list.append(os.path.join(data_path, vals[0]))
+            output_list.append(torch.Tensor([int(vals[1])]).unsqueeze(1))
+
+    return input_list, output_list
 
 # set up for training
 cnn = models.vgg19(pretrained=True).features.to(device).eval()
@@ -64,41 +77,57 @@ if(model_path):
     classifier.eval()
 
 loss_f = nn.MSELoss()
-optimizer = optim.Adam(classifier.parameters(), lr=0.001)
+optimizer = optim.SGD(classifier.parameters(), lr=0.001, momentum=0.9)
 
 # load images
-img_list = []
-output_list = []
-with open(os.path.join(data_path, "train.csv"), 'r') as f:
-    data = f.read().split('\n')
-    for entry in data:
-        vals = entry.split(',')
-        img_list.append(os.path.join(data_path, vals[0]))
-        output_list.append(torch.Tensor([int(vals[1])]).squeeze())
+train_list, target_list = load_from_csv('train.csv')
 
-# TRAIN
+# === TRAIN ===
 print("Started training...")
 total_loss = 0
+losses = []
 
 for i in range(epochs):
     # choose random image
-    idx = random.randint(0, len(output_list)-1)
-    inputs = image_loader(img_list[idx])
-    outputs = output_list[idx]
+    idx = random.randint(0, len(train_list)-1)
+    inputs = image_loader(train_list[idx])
+    target = target_list[idx]
 
     # run iteration
     optimizer.zero_grad()
 
-    cnn_output = cnn(inputs)
-    outputs = classifier(cnn_output.view(1, -1))
+    outputs = classifier(cnn(inputs).view(1, -1))
 
-    loss = loss_f(inputs, outputs)
+    loss = loss_f(outputs, target)
+    total_loss += loss.item()
+    losses.append(loss.item())
+    
     loss.backward()
 
     optimizer.step()
 
     # save model
-    if i % 100 == 0:
+    if i % 100 == 99:
         torch.save(classifier.state_dict(), os.path.join(data_path, f"models/classifier-{i}-{loss}"))
 
-    print(f"Epoch: {i}\tLoss: {loss}")
+    print(f"Epoch: {i}\tLoss: {loss}\tAvg. Loss: {total_loss / (i+1)}")
+
+# === TEST ===
+with torch.no_grad():
+    test_inputs, test_outputs = load_from_csv('test.csv')
+    
+    print("Started testing...")
+    correct = 0
+
+    for idx in range(len(test_inputs)):
+        # choose random image
+        inputs = image_loader(img_list[idx])
+        target = output_list[idx]
+
+        outputs = classifier(cnn(inputs).view(1, -1))
+
+        res = round(outputs.item())
+        if res == target.item():
+            correct += 1
+
+    print("Correct: {correct}\tPercent: {float(correct) / len(test_inputs)}")
