@@ -1,3 +1,5 @@
 # Food Poisoning
+Detect if a picture of produce is fresh or rotten.
 
-Detect if a picture of food has gone rotten or not
+# Setup
+  - `pip install -r "requirements.txt"`

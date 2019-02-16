@@ -17,8 +17,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 imsize = 224
 epochs = 400
 data_path = 'data'
-model_path = ''
-is_train = True
+model_path = 'models/classifier-99'
+is_train = False
 
 class Classifier(nn.Module):
     """VGG tensor to binary classification"""
@@ -73,7 +73,7 @@ cnn = models.vgg19(pretrained=True).features.to(device).eval()
 
 classifier = Classifier()
 # load from file
-if(model_path):
+if model_path:
     classifier.load_state_dict(torch.load(model_path))
     classifier.eval()
 
@@ -116,6 +116,11 @@ if is_train:
 # === TEST ===
 with torch.no_grad():
     test_inputs, test_outputs = load_from_csv('test.csv')
+
+    if model_path:
+        classifier.load_state_dict(torch.load(model_path))
+        classifier.eval()
+        
     
     print("Started testing...")
     correct = 0
@@ -133,4 +138,4 @@ with torch.no_grad():
 
         print(f"Progress {round(float(idx) / len(test_inputs), 2)}\tPredict: {round(outputs.item(), 2)}\tActual: {round(target.item(), 2)}")
 
-    print("Correct: {correct}\tPercent: {float(correct) / len(test_inputs)}")
+    print(f"Correct: {correct}\tPercent: {float(correct) / len(test_inputs)}")
