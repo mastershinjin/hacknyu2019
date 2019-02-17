@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<title>FreshFood</title>
+
+<head>
+
+  <!--<link rel="stylesheet" type="text/css" href="radiocss.css">-->
+  <script>
+
+function getLocation() {
+  if (navigator.geolocation) {
+    //navigator.geolocation.getCurrentPosition(showPosition);
+    document.getElementById("demo").innerHTML = "Location: HackNYU";
+  } else {
+    document.getElementById("demo").innerHTML = "Geolocation is not supported by this browser.";
+  }
+}
+
+function showPosition(position) {
+  x.innerHTML = "Latitude: " + position.coords.latitude +
+  "<br>Longitude: " + position.coords.longitude;
+}
+</script>
+
+
+
+  <style>
+
+  body {
+  background-image: url("https://images.pexels.com/photos/616401/pexels-photo-616401.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940");
+  background-color: #cccccc;
+  background-size: cover;
+  background-position: center;
+  font-family: "Times New Roman", Times, serif;
+  background-repeat: no-repeat;
+
+  }
+
+  .column {
+
+    padding: 0px 0px;
+    float: left;
+    width: 100%;
+
+  }
+
+  /* Clear floats after the columns */
+  .row:after {
+    content: "";
+    display: table;
+    clear: both;
+
+  }
+
+  div {
+    text-align: center;
+  }
+
+  button {
+    width: 140px;
+    background-color: #555555;
+    border: none;
+    color: white;
+    border-radius: 12px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    font-family: "Times New Roman", Times, serif;
+  }
+</style>
+</head>
+<body>
+  <h1 align="center">Welcome to FreshFood</h1>
+  <h2 align="center">Report a location with free food:</h2>
+  <div class="row">
+    <div class="column">
+      <form action = "find food.html">
+        Location:<br>
+        <input type="text" name="location"><br>
+        Description:<br>
+        <textarea name="Text1" cols="40" rows="5"></textarea><br>
+<input type="submit" value="Submit">
+
+  </form>
+ </div>
+</div>
+
+</body>
+</html>
